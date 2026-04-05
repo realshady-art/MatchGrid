@@ -131,9 +131,9 @@ The historical training split is season-aware rather than randomly shuffled.
 
 Default training split:
 
-- train: `2015-2016` to `2021-2022`
-- validation: `2022-2023`
-- test: `2023-2024`
+- train: `2015-2016` to `2022-2023`
+- validation: `2023-2024`
+- test: `2024-2025`
 
 You can edit these values in `src/config.py`.
 
@@ -158,12 +158,38 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+## Live API Setup
+
+The live prediction service uses the official football-data.org API.
+
+Set your token before running `predict`:
+
+```bash
+export FOOTBALL_DATA_API_TOKEN="your_token_here"
+```
+
+The provider currently uses:
+
+- `competitions/PL/teams` for team resolution
+- `competitions/PL/standings` for current rank
+- `competitions/PL/matches` for scheduled and finished EPL fixtures
+- `teams/{id}/matches` for each club's latest completed matches
+
+The live provider is intentionally limited to:
+
+- upcoming EPL 2025/26 fixtures
+- each team's last 5 finished EPL matches
+- recent head-to-head results
+- rest days based on the target fixture date
+
 ## Run
 
 ```bash
 python3 main.py train
 python3 main.py predict --home Arsenal --away Chelsea
 ```
+
+If the same fixture context has already been fetched recently, the prediction flow reuses local cache files under `cache/` instead of repeating the same API calls.
 
 ## Next Steps
 

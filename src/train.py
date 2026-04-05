@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 
 import joblib
 import pandas as pd
@@ -22,7 +23,7 @@ from src.config import (
 )
 from src.data_loader import load_all_raw_data
 from src.evaluate import build_metrics_row, save_metrics, save_predictions
-from src.features import build_feature_table, get_model_features
+from src.features import build_feature_table, get_feature_columns, get_model_features
 from src.utils import ensure_directories
 
 
@@ -101,6 +102,9 @@ def run_training_pipeline() -> pd.DataFrame:
         model_path = Path(OUTPUT_MODELS_DIR) / f"{model_name}.joblib"
         joblib.dump(model, model_path)
         predictions_export[f"{model_name}_pred"] = test_pred
+
+    feature_schema_path = Path(OUTPUT_MODELS_DIR) / "feature_columns.json"
+    feature_schema_path.write_text(json.dumps(get_feature_columns(), indent=2), encoding="utf-8")
 
     metrics = pd.DataFrame(metrics_rows).sort_values(["split", "accuracy"], ascending=[True, False]).reset_index(drop=True)
     save_metrics(metrics)

@@ -15,6 +15,7 @@ class CacheManager:
         ensure_directories(
             [
                 self.cache_dir,
+                self.cache_dir / "fixture",
                 self.cache_dir / "team_form",
                 self.cache_dir / "head_to_head",
             ]
