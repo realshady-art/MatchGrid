@@ -6,6 +6,7 @@ DATA_DIR = PROJECT_ROOT / "data"
 RAW_DATA_DIR = DATA_DIR / "raw"
 INTERIM_DATA_DIR = DATA_DIR / "interim"
 PROCESSED_DATA_DIR = DATA_DIR / "processed"
+CACHE_DIR = PROJECT_ROOT / "cache"
 
 OUTPUT_DIR = PROJECT_ROOT / "outputs"
 OUTPUT_MODELS_DIR = OUTPUT_DIR / "models"
@@ -33,3 +34,9 @@ TEST_SEASONS = ["2023-2024"]
 ROLLING_WINDOWS = (3, 5)
 
 MODEL_RANDOM_STATE = 42
+TARGET_SEASON = "2025-2026"
+
+CACHE_TTL_HOURS = {
+    "team_form": 6,
+    "head_to_head": 24,
+}

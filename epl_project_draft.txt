@@ -1,11 +1,12 @@
-EPL Match Outcome Prediction Project Draft
+EPL 2025/26 Match Outcome Prediction Project Draft
 
 Project Goal
-Build an end-to-end Premier League match prediction project using roughly the last 10 seasons of EPL data. The project should include data collection, cleaning, feature engineering, baseline models, machine learning models, evaluation, and a short analysis summary that can support a credible resume bullet.
+Build an EPL match prediction project specifically for the 2025/26 Premier League season. The model should be trained on historical EPL data, while live predictions should use freshly pulled pre-match team context and local caching to avoid unnecessary API calls.
 
 Recommended Scope
 - Competition: English Premier League
-- Seasons: 2015-16 through 2024-25
+- Prediction season: 2025/26 only
+- Historical training data: prior EPL seasons
 - Prediction target: Home Win / Draw / Away Win
 - Granularity: one row per match
 - Constraint: only use information available before kickoff
