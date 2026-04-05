@@ -34,7 +34,7 @@ def load_season_csv(path: Path) -> pd.DataFrame:
         raise ValueError(f"{path.name} is missing required columns: {missing}")
 
     frame = frame[list(COLUMN_MAP)].rename(columns=COLUMN_MAP).copy()
-    frame[DATE_COLUMN] = pd.to_datetime(frame[DATE_COLUMN], dayfirst=True, errors="coerce")
+    frame[DATE_COLUMN] = pd.to_datetime(frame[DATE_COLUMN], format="%d/%m/%Y", errors="coerce")
     frame = frame.dropna(subset=[DATE_COLUMN, HOME_TEAM_COLUMN, AWAY_TEAM_COLUMN, TARGET_COLUMN])
     frame[SEASON_COLUMN] = infer_season_from_filename(path)
     frame[TARGET_COLUMN] = frame[TARGET_COLUMN].str.upper().str.strip()

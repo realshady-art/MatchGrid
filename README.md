@@ -158,38 +158,32 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Live API Setup
+## Live Data Setup
 
-The live prediction service uses the official football-data.org API.
+The live prediction service uses the current-season EPL CSV from `football-data.co.uk`.
 
-Set your token before running `predict`:
+On the first prediction run, the provider downloads:
 
-```bash
-export FOOTBALL_DATA_API_TOKEN="your_token_here"
-```
+- `https://www.football-data.co.uk/mmz4281/2526/E0.csv`
 
-The provider currently uses:
-
-- `competitions/PL/teams` for team resolution
-- `competitions/PL/standings` for current rank
-- `competitions/PL/matches` for scheduled and finished EPL fixtures
-- `teams/{id}/matches` for each club's latest completed matches
+It refreshes the file when the local copy is older than six hours.
 
 The live provider is intentionally limited to:
 
-- upcoming EPL 2025/26 fixtures
-- each team's last 5 finished EPL matches
-- recent head-to-head results
+- upcoming EPL 2025/26 fixtures found in the current-season CSV
+- each team's last 5 finished EPL matches from the same season
+- recent head-to-head results computed from the historical training data plus finished 2025/26 matches
 - rest days based on the target fixture date
 
 ## Run
 
 ```bash
+python3 main.py fetch-data
 python3 main.py train
 python3 main.py predict --home Arsenal --away Chelsea
 ```
 
-If the same fixture context has already been fetched recently, the prediction flow reuses local cache files under `cache/` instead of repeating the same API calls.
+If the same fixture context has already been fetched recently, the prediction flow reuses local cache files under `cache/` instead of repeating the same data pull logic.
 
 ## Next Steps
 

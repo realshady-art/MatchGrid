@@ -56,7 +56,6 @@ def _build_models() -> dict[str, object]:
                     "model",
                     LogisticRegression(
                         max_iter=2000,
-                        multi_class="multinomial",
                         random_state=MODEL_RANDOM_STATE,
                     ),
                 ),

@@ -10,7 +10,7 @@ import pandas as pd
 from src.cache_manager import CacheManager
 from src.config import CACHE_TTL_HOURS, OUTPUT_MODELS_DIR, TARGET_SEASON
 from src.features import get_feature_columns
-from src.live_data_provider import FootballDataProvider, FixtureContext, LiveDataProvider
+from src.live_data_provider import FootballDataCsvProvider, FixtureContext, LiveDataProvider
 
 
 def _model_path(model_name: str = "logistic_regression") -> Path:
@@ -75,7 +75,7 @@ def predict_match(
     cache: CacheManager | None = None,
     model_name: str = "logistic_regression",
 ) -> dict[str, Any]:
-    provider = provider or FootballDataProvider()
+    provider = provider or FootballDataCsvProvider()
     cache = cache or CacheManager()
 
     fixture_key = f"{home_team}__{away_team}"

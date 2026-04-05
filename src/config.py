@@ -5,6 +5,7 @@ import os
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 RAW_DATA_DIR = DATA_DIR / "raw"
+LIVE_DATA_DIR = DATA_DIR / "live"
 INTERIM_DATA_DIR = DATA_DIR / "interim"
 PROCESSED_DATA_DIR = DATA_DIR / "processed"
 CACHE_DIR = PROJECT_ROOT / "cache"
@@ -37,8 +38,10 @@ ROLLING_WINDOWS = (3, 5)
 
 MODEL_RANDOM_STATE = 42
 TARGET_SEASON = "2025-2026"
-FOOTBALL_DATA_API_BASE_URL = "https://api.football-data.org/v4"
-FOOTBALL_DATA_API_TOKEN = os.getenv("FOOTBALL_DATA_API_TOKEN", "")
+LIVE_SEASON_CODE = "2526"
+LIVE_COMPETITION_CODE = "E0"
+LIVE_DATA_URL = f"https://www.football-data.co.uk/mmz4281/{LIVE_SEASON_CODE}/{LIVE_COMPETITION_CODE}.csv"
+LIVE_DATA_FILENAME = f"{LIVE_SEASON_CODE}_{LIVE_COMPETITION_CODE}.csv"
 
 CACHE_TTL_HOURS = {
     "fixture": 6,
