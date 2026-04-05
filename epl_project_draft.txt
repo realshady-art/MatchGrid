@@ -1,0 +1,306 @@
+EPL Match Outcome Prediction Project Draft
+
+Project Goal
+Build an end-to-end Premier League match prediction project using roughly the last 10 seasons of EPL data. The project should include data collection, cleaning, feature engineering, baseline models, machine learning models, evaluation, and a short analysis summary that can support a credible resume bullet.
+
+Recommended Scope
+- Competition: English Premier League
+- Seasons: 2015-16 through 2024-25
+- Prediction target: Home Win / Draw / Away Win
+- Granularity: one row per match
+- Constraint: only use information available before kickoff
+
+Core Research Questions
+1. Can pre-match team and fixture information predict EPL match outcomes better than simple baselines?
+2. Which features matter most: recent form, goal differential, league ranking, home advantage, rest days, head-to-head, or xG-based measures?
+3. How much improvement can a structured ML pipeline deliver over a naive home-win or table-rank baseline?
+
+Primary Data Source
+Use football-data.co.uk as the first version data source.
+
+Why this source
+- Stable historical EPL coverage
+- Easy CSV download
+- Includes results and useful match-level fields
+- Good for a reproducible student project
+
+Optional Enhanced Sources
+- FBref: team and match logs
+- Understat: xG and xGA
+
+Version 1 recommendation
+Start with football-data.co.uk only. Build a complete reproducible pipeline first. Add FBref or Understat later only if needed.
+
+Target Deliverables
+1. Reproducible dataset covering around 10 EPL seasons
+2. Clean feature table for pre-match prediction
+3. At least two baselines and two ML models
+4. Evaluation on season-based holdout data
+5. One short written analysis summary
+6. Resume-ready project bullet based on measured results
+
+Suggested Dataset Fields
+Raw match-level fields
+- date
+- season
+- home_team
+- away_team
+- full_time_home_goals
+- full_time_away_goals
+- result
+- optional: shots, shots_on_target, odds
+
+Target label
+- H = Home Win
+- D = Draw
+- A = Away Win
+
+Recommended Pre-Match Features
+Rolling team form
+- home_points_last_3
+- away_points_last_3
+- home_points_last_5
+- away_points_last_5
+- home_win_rate_last_5
+- away_win_rate_last_5
+
+Attacking and defensive form
+- home_goals_scored_last_5
+- away_goals_scored_last_5
+- home_goals_conceded_last_5
+- away_goals_conceded_last_5
+- home_goal_diff_last_5
+- away_goal_diff_last_5
+
+League strength and context
+- home_rank_before_match
+- away_rank_before_match
+- rank_diff
+- home_rest_days
+- away_rest_days
+- match_month
+
+Head-to-head and venue
+- head_to_head_home_points_last_3
+- head_to_head_goal_diff_last_3
+- is_home
+
+Optional advanced features if extra data is added
+- home_xg_last_5
+- away_xg_last_5
+- home_xga_last_5
+- away_xga_last_5
+- rolling_shots_on_target
+
+Modeling Plan
+Baselines
+1. Most frequent class baseline
+2. Always predict home win baseline
+3. Ranking-difference heuristic baseline
+
+Machine learning models
+1. Multinomial Logistic Regression
+2. Random Forest
+3. Optional: XGBoost or LightGBM if environment setup is easy
+
+Validation Strategy
+Do not randomly shuffle all matches together.
+
+Use season-aware splits to avoid leakage.
+
+Recommended split
+- Train: 2015-16 to 2021-22
+- Validation: 2022-23
+- Test: 2023-24 or 2024-25
+
+Better but optional
+- Rolling-origin validation across multiple seasons
+
+Evaluation Metrics
+Primary metrics
+- Accuracy
+- Macro F1
+
+Secondary metrics
+- Precision by class
+- Recall by class
+- Confusion matrix
+- Calibration or predicted probability quality
+
+Expected Outcome Range
+For a three-class EPL outcome model using pre-match features only, a realistic and defensible test accuracy target is roughly 55% to 65%. If the model exceeds 60% on a proper season holdout, that is already resume-worthy.
+
+Avoid
+- Reporting extremely high accuracy without strict validation
+- Using post-match data in features
+- Mixing seasons randomly and calling it test accuracy
+
+Project Analysis Outline
+Section 1: Problem definition
+- Predict EPL match outcomes from pre-match data
+- Explain why draw prediction makes this harder than binary tasks
+
+Section 2: Data collection
+- Download and combine 10 seasons of EPL CSV files
+- Standardize team names and schema
+- Add season identifiers
+
+Section 3: Data cleaning
+- Sort matches chronologically
+- Handle missing values carefully
+- Remove fields not known before kickoff
+
+Section 4: Feature engineering
+- Rolling form windows
+- Goal differential trends
+- Rank-based features
+- Home advantage
+- Optional head-to-head features
+
+Section 5: Modeling
+- Fit baselines first
+- Train logistic regression
+- Train random forest
+- Compare performance
+
+Section 6: Results
+- Table of metrics by model
+- Confusion matrix for best model
+- Feature importance or coefficient analysis
+
+Section 7: Interpretation
+- Which signals matter most
+- Which classes are hardest to predict
+- Why draws are difficult
+
+Section 8: Limitations
+- No lineup or injury data in version 1
+- Limited tactical context
+- Potential class imbalance
+
+Section 9: Next steps
+- Add xG
+- Add odds-based features
+- Build a lightweight dashboard or CLI tool
+
+Recommended Repository Structure
+epl-match-prediction/
+  data/
+    raw/
+    interim/
+    processed/
+  notebooks/
+    01_data_collection.ipynb
+    02_cleaning_feature_engineering.ipynb
+    03_modeling.ipynb
+    04_results_analysis.ipynb
+  src/
+    data_loader.py
+    preprocess.py
+    features.py
+    train.py
+    evaluate.py
+    utils.py
+  outputs/
+    figures/
+    tables/
+    models/
+  README.md
+  requirements.txt
+  main.py
+
+Suggested Responsibilities For Each File
+src/data_loader.py
+- Load season CSV files
+- Standardize column names
+- Concatenate seasons
+
+src/preprocess.py
+- Clean missing values
+- Convert dates
+- Encode target labels
+- Ensure chronological ordering
+
+src/features.py
+- Build rolling features
+- Build rank-based features
+- Build rest-day features
+- Build head-to-head features
+
+src/train.py
+- Split train/validation/test by season
+- Train baseline models
+- Train logistic regression and random forest
+
+src/evaluate.py
+- Compute metrics
+- Build confusion matrix
+- Save summary tables
+
+src/utils.py
+- Shared helper functions
+- Configs and mapping utilities
+
+notebooks/01_data_collection.ipynb
+- Show where the raw EPL files come from
+- Display schema checks
+
+notebooks/02_cleaning_feature_engineering.ipynb
+- Explain rolling window construction
+- Show sample feature table
+
+notebooks/03_modeling.ipynb
+- Train and compare models
+- Show validation and test metrics
+
+notebooks/04_results_analysis.ipynb
+- Interpret strongest features
+- Summarize failure modes
+
+Minimum Viable Version
+Phase 1
+- Download 10 EPL seasons
+- Combine data into one clean table
+- Create rolling form and rank-difference features
+- Train logistic regression and random forest
+- Evaluate on season-based test set
+
+Phase 2
+- Add xG or advanced match stats
+- Compare feature sets
+- Add model calibration and charts
+
+Phase 3
+- Wrap into a lightweight dashboard or CLI workflow
+- Produce polished figures for portfolio use
+
+Suggested README Sections
+1. Project overview
+2. Data sources
+3. Prediction target
+4. Feature engineering
+5. Models
+6. Evaluation setup
+7. Results
+8. Limitations
+9. Next steps
+
+Resume-Oriented End Goal
+After results are measured, the project should support a bullet like:
+
+Built an end-to-end EPL match prediction pipeline using 10 seasons of historical match data, engineering rolling form, goal-differential, and standings-based features to predict win/draw/loss outcomes.
+
+Evaluated baseline and machine learning models on season-based holdout data, achieving X% test accuracy and identifying recent form, rank difference, and home advantage as the strongest predictors.
+
+Immediate Next Step Checklist
+1. Confirm exact season range
+2. Download EPL data files
+3. Define the canonical schema
+4. Build feature generation functions
+5. Run baseline models first
+6. Measure holdout accuracy before writing any resume number
+
+Notes On Credibility
+- A realistic test accuracy is more valuable than an inflated one
+- A clean pipeline and solid evaluation design will matter more than claiming an unusually high number
+- If the final result is modest but defensible, write the analysis insight as the project strength
