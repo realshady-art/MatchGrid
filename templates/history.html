@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<main class="panel history-panel">
+  <div class="panel-header">
+    <h2>Prediction History</h2>
+    <span class="status-chip ready">{{ records|length }} stored</span>
+  </div>
+  <div class="history-table">
+    {% for item in records %}
+    <a class="history-row" href="{{ url_for('prediction_detail', record_id=item.id) }}">
+      <span>{{ item.created_at }}</span>
+      <span>{{ item.home_team }} vs {{ item.away_team }}</span>
+      <span>{{ item.prediction }}</span>
+      <span>{{ item.fixture_utc_date }}</span>
+    </a>
+    {% else %}
+    <div class="empty-state">No predictions stored yet.</div>
+    {% endfor %}
+  </div>
+</main>
+{% endblock %}

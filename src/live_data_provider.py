@@ -115,6 +115,10 @@ class FootballDataCsvProvider:
         self._historical_df: pd.DataFrame | None = None
         self._team_ids: dict[str, int] = {}
 
+    def available_teams(self) -> list[str]:
+        teams = sorted(set(self._get_live_df()[HOME_TEAM_COLUMN]).union(set(self._get_live_df()[AWAY_TEAM_COLUMN])))
+        return teams
+
     def get_fixture_context(self, home_team: str, away_team: str) -> FixtureContext:
         live_df = self._get_live_df()
         resolved_home = self._resolve_team_name(home_team)

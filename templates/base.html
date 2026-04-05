@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ title or "Match Board" }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">EPL 2025/26</p>
+          <h1>Match Board</h1>
+          <p class="hero-copy">Predict outcomes from live team form, recent head-to-head records, and rest-day context. Every prediction is stored and rendered on a live timeline.</p>
+        </div>
+        <nav class="hero-nav">
+          <a href="{{ url_for('index') }}">Predict</a>
+          <a href="{{ url_for('history') }}">History</a>
+        </nav>
+      </header>
+      {% block content %}{% endblock %}
+    </div>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+  </body>
+</html>

@@ -181,9 +181,34 @@ The live provider is intentionally limited to:
 python3 main.py fetch-data
 python3 main.py train
 python3 main.py predict --home Arsenal --away Chelsea
+python3 main.py gui
 ```
 
 If the same fixture context has already been fetched recently, the prediction flow reuses local cache files under `cache/` instead of repeating the same data pull logic.
+
+## GUI
+
+The local GUI runs on Flask with a SQLite backend.
+
+Features included in V1:
+
+- clean web form for home and away team input
+- prediction result page with probability breakdown
+- backend storage of each prediction request
+- history page for previously stored predictions
+- auto-refreshing timeline on the homepage
+
+Start the app with:
+
+```bash
+python3 main.py gui
+```
+
+Then open:
+
+```text
+http://127.0.0.1:5000
+```
 
 ## Next Steps
 

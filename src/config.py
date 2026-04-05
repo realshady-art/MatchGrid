@@ -1,5 +1,4 @@
 from pathlib import Path
-import os
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -14,6 +13,8 @@ OUTPUT_DIR = PROJECT_ROOT / "outputs"
 OUTPUT_MODELS_DIR = OUTPUT_DIR / "models"
 OUTPUT_TABLES_DIR = OUTPUT_DIR / "tables"
 OUTPUT_FIGURES_DIR = OUTPUT_DIR / "figures"
+INSTANCE_DIR = PROJECT_ROOT / "instance"
+DATABASE_PATH = INSTANCE_DIR / "match_board.db"
 
 TARGET_COLUMN = "result"
 DATE_COLUMN = "date"
@@ -48,3 +49,6 @@ CACHE_TTL_HOURS = {
     "team_form": 6,
     "head_to_head": 24,
 }
+
+APP_HOST = "127.0.0.1"
+APP_PORT = 5000

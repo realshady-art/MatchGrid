@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block content %}
+<main class="grid">
+  <section class="panel action-panel">
+    <div class="panel-header">
+      <h2>Predict a Match</h2>
+      <span class="status-chip {{ 'ready' if model_ready else 'warn' }}">
+        {{ 'Model Ready' if model_ready else 'Training Required' }}
+      </span>
+    </div>
+    <form class="predict-form" action="{{ url_for('predict_view') }}" method="post">
+      <label>
+        Home team
+        <input list="teams" name="home_team" placeholder="Arsenal" required>
+      </label>
+      <label>
+        Away team
+        <input list="teams" name="away_team" placeholder="Chelsea" required>
+      </label>
+      <datalist id="teams">
+        {% for team in teams %}
+        <option value="{{ team }}"></option>
+        {% endfor %}
+      </datalist>
+      <button type="submit">Predict</button>
+    </form>
+    {% if error %}
+    <p class="error-banner">{{ error }}</p>
+    {% endif %}
+    <div class="micro-copy">
+      <p>Uses the trained historical model plus current 2025/26 form, recent head-to-head context, and rest-day signals.</p>
+    </div>
+  </section>
+
+  <section class="panel highlight-panel">
+    <div class="panel-header">
+      <h2>Latest Stored Prediction</h2>
+      <span class="clock" data-live-clock></span>
+    </div>
+    {% if latest_result %}
+    <a class="result-card" href="{{ url_for('prediction_detail', record_id=latest_result.id) }}">
+      <div class="fixture-line">{{ latest_result.home_team }} vs {{ latest_result.away_team }}</div>
+      <div class="prediction-pill">{{ latest_result.prediction }}</div>
+      <div class="meta-line">
+        <span>Fixture {{ latest_result.fixture_utc_date }}</span>
+        <span>Saved {{ latest_result.created_at }}</span>
+      </div>
+    </a>
+    {% else %}
+    <div class="empty-state">No predictions stored yet. Submit one to start the timeline.</div>
+    {% endif %}
+  </section>
+
+  <section class="panel timeline-panel">
+    <div class="panel-header">
+      <h2>Live Timeline</h2>
+      <span class="status-chip ready">Auto Refresh</span>
+    </div>
+    <div id="timeline" class="timeline-list" data-timeline>
+      {% for item in recent_predictions %}
+      <a class="timeline-item" href="{{ url_for('prediction_detail', record_id=item.id) }}">
+        <div class="timeline-marker"></div>
+        <div class="timeline-content">
+          <div class="timeline-title">{{ item.home_team }} vs {{ item.away_team }}</div>
+          <div class="timeline-subtitle">Prediction: {{ item.prediction }}</div>
+          <div class="timeline-meta">{{ item.created_at }}</div>
+        </div>
+      </a>
+      {% else %}
+      <div class="empty-state">The timeline will populate after the first prediction is saved.</div>
+      {% endfor %}
+    </div>
+  </section>
+</main>
+{% endblock %}

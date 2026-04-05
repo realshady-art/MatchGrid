@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<main class="detail-grid">
+  <section class="panel">
+    <div class="panel-header">
+      <h2>{{ record.home_team }} vs {{ record.away_team }}</h2>
+      <span class="prediction-pill">{{ record.prediction }}</span>
+    </div>
+    <div class="meta-stack">
+      <div><strong>Saved:</strong> {{ record.created_at }}</div>
+      <div><strong>Fixture:</strong> {{ record.fixture_utc_date }}</div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Probabilities</h2>
+    </div>
+    <div class="probability-grid">
+      {% for label, value in record.probabilities.items() %}
+      <div class="probability-card">
+        <span>{{ label }}</span>
+        <strong>{{ "%.1f"|format(value * 100) }}%</strong>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Feature Snapshot</h2>
+    </div>
+    <pre class="json-block">{{ record.features | tojson(indent=2) }}</pre>
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Stored Match Context</h2>
+    </div>
+    <pre class="json-block">{{ record.summary | tojson(indent=2) }}</pre>
+  </section>
+</main>
+{% endblock %}
