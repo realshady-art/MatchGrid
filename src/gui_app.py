@@ -1,163 +1,123 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+import json
+import re
 from pathlib import Path
 from typing import Any
 
-from flask import Flask, abort, jsonify, redirect, render_template, request, url_for
+from flask import Flask, abort, jsonify, redirect, render_template, request, send_file, url_for
 
-from src.bootstrap_data import bootstrap_project_data
-from src.cache_manager import CacheManager
-from src.config import DATABASE_PATH, OUTPUT_MODELS_DIR
-from src.live_data_provider import FootballDataCsvProvider, LiveDataProviderError
-from src.predict_service import predict_match
-from src.storage import (
-    create_prediction_record,
-    get_prediction_record,
-    init_db,
-    list_prediction_records,
-)
+from src.board_data import filter_players, league_labels, load_players_bundle, players_by_id
+from src.board_predict import predict_lineup_match
+from src.config import BOARD_DATA_DIR, PLAYER_PHOTO_CACHE_DIR
+from src.player_photos import ensure_photo_file
+
+BOARD_PLAYER_ID_RE = re.compile(r"^u5-[A-Za-z0-9_]+-\d+$")
 
 
-def create_app(
-    db_path: Path = DATABASE_PATH,
-    cache_dir: Path | None = None,
-    bootstrap_data: bool = True,
-) -> Flask:
+def _board_template_context() -> dict[str, Any]:
+    bundle = load_players_bundle()
+    players = bundle.get("players", [])
+    board_ready = len(players) > 0
+    meta_path = BOARD_DATA_DIR / "players_pool.meta.json"
+    scrape_meta: dict[str, Any] = {}
+    if meta_path.is_file():
+        try:
+            scrape_meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            scrape_meta = {}
+    board_season = bundle.get("season") or scrape_meta.get("season_label") or ""
+    if scrape_meta.get("understat_season"):
+        board_season = f"{board_season} (Understat {scrape_meta['understat_season']})".strip()
+    return {
+        "board_ready": board_ready,
+        "board_season": board_season,
+        "board_error": bundle.get("error"),
+        "leagues": league_labels(),
+        "roster_count": len(players),
+    }
+
+
+def create_app() -> Flask:
     app = Flask(
         __name__,
         template_folder=str(Path(__file__).resolve().parent.parent / "templates"),
         static_folder=str(Path(__file__).resolve().parent.parent / "static"),
     )
 
-    if bootstrap_data:
-        bootstrap_project_data()
-    init_db(db_path)
-
-    def _build_index_context(error: str | None = None, form_data: dict[str, str] | None = None) -> dict[str, Any]:
-        provider = FootballDataCsvProvider()
-        recent_predictions = list_prediction_records(limit=8, db_path=db_path)
-        latest_result = recent_predictions[0] if recent_predictions else None
-        return {
-            "teams": provider.available_teams(),
-            "recent_predictions": recent_predictions,
-            "latest_result": latest_result,
-            "model_ready": (OUTPUT_MODELS_DIR / "logistic_regression.joblib").exists(),
-            "error": error,
-            "form_data": form_data
-            or {
-                "home_team": "",
-                "away_team": "",
-                "home_snapshot_mode": "now",
-                "away_snapshot_mode": "now",
-                "home_snapshot_month": "",
-                "away_snapshot_month": "",
-            },
-        }
-
     @app.get("/")
-    def index() -> str:
-        return render_template("index.html", **_build_index_context())
+    def index():
+        return render_template("match_board.html", **_board_template_context())
 
-    @app.post("/predict")
-    def predict_view():
-        home_team = request.form.get("home_team", "").strip()
-        away_team = request.form.get("away_team", "").strip()
-        home_snapshot_mode = request.form.get("home_snapshot_mode", "now").strip()
-        away_snapshot_mode = request.form.get("away_snapshot_mode", "now").strip()
-        home_snapshot_month = request.form.get("home_snapshot_month", "").strip()
-        away_snapshot_month = request.form.get("away_snapshot_month", "").strip()
+    @app.get("/board")
+    def board_alias():
+        return redirect(url_for("index"))
 
-        form_data = {
-            "home_team": home_team,
-            "away_team": away_team,
-            "home_snapshot_mode": home_snapshot_mode,
-            "away_snapshot_mode": away_snapshot_mode,
-            "home_snapshot_month": home_snapshot_month,
-            "away_snapshot_month": away_snapshot_month,
-        }
-
-        if not home_team or not away_team:
-            return render_template("index.html", **_build_index_context(error="Enter both team names before requesting a prediction.", form_data=form_data))
-
-        if home_team == away_team:
-            return render_template("index.html", **_build_index_context(error="Choose two different clubs for the comparison.", form_data=form_data))
-
-        if home_snapshot_mode == "historical" and not home_snapshot_month:
-            return render_template("index.html", **_build_index_context(error="Select a month for the home team snapshot, or switch it to Now.", form_data=form_data))
-
-        if away_snapshot_mode == "historical" and not away_snapshot_month:
-            return render_template("index.html", **_build_index_context(error="Select a month for the away team snapshot, or switch it to Now.", form_data=form_data))
-
-        home_snapshot = home_snapshot_month if home_snapshot_mode == "historical" else "now"
-        away_snapshot = away_snapshot_month if away_snapshot_mode == "historical" else "now"
-
-        try:
-            result = predict_match(
-                home_team=home_team,
-                away_team=away_team,
-                home_snapshot=home_snapshot,
-                away_snapshot=away_snapshot,
-                provider=FootballDataCsvProvider(),
-                cache=CacheManager(cache_dir) if cache_dir is not None else None,
-            )
-        except FileNotFoundError:
-            return render_template("index.html", **_build_index_context(error="No trained model found. Run the training pipeline first.", form_data=form_data))
-        except LiveDataProviderError as exc:
-            return render_template("index.html", **_build_index_context(error=str(exc), form_data=form_data))
-        except Exception as exc:
-            return render_template(
-                "index.html",
-                **_build_index_context(
-                    error=f"Prediction request failed: {exc}",
-                    form_data=form_data,
-                ),
-            )
-
-        record_id = create_prediction_record(
-            created_at=datetime.now(timezone.utc).isoformat(),
-            home_team=result["home_team"],
-            away_team=result["away_team"],
-            home_snapshot_label=result["home_snapshot_label"],
-            away_snapshot_label=result["away_snapshot_label"],
-            fixture_utc_date=result["fixture_utc_date"],
-            prediction=result["prediction"],
-            probabilities=result.get("probabilities"),
-            features=result["features_used"],
-            summary=result["data_summary"],
-            db_path=db_path,
-        )
-        return redirect(url_for("prediction_detail", record_id=record_id))
-
-    @app.get("/history")
-    def history() -> str:
-        records = list_prediction_records(limit=100, db_path=db_path)
-        return render_template(
-            "history.html",
-            records=records,
-            record_count=len(records),
-            model_ready=(OUTPUT_MODELS_DIR / "logistic_regression.joblib").exists(),
-        )
-
-    @app.get("/predictions/<int:record_id>")
-    def prediction_detail(record_id: int) -> str:
-        record = get_prediction_record(record_id, db_path=db_path)
-        if record is None:
-            abort(404)
-        return render_template(
-            "detail.html",
-            record=record,
-            model_ready=(OUTPUT_MODELS_DIR / "logistic_regression.joblib").exists(),
-        )
-
-    @app.get("/api/timeline")
-    def timeline_api():
-        records = list_prediction_records(limit=12, db_path=db_path)
+    @app.get("/api/board/players")
+    def api_board_players():
+        q = request.args.get("q", "")
+        league = request.args.get("league", "")
+        limit = min(500, max(1, int(request.args.get("limit", 120))))
+        bundle = load_players_bundle()
+        rows = filter_players(search=q, league=league, limit=limit)
         return jsonify(
             {
-                "generated_at": datetime.now(timezone.utc).isoformat(),
-                "items": records,
+                "season": bundle.get("season", ""),
+                "count": len(rows),
+                "items": rows,
             }
         )
+
+    @app.post("/api/board/predict")
+    def api_board_predict():
+        payload = request.get_json(force=True, silent=True)
+        if not isinstance(payload, dict):
+            return jsonify({"error": "expected_json_object"}), 400
+        raw_home = payload.get("home")
+        raw_away = payload.get("away")
+        if not isinstance(raw_home, list) or not isinstance(raw_away, list):
+            return jsonify({"error": "home_and_away_must_be_arrays"}), 400
+
+        def _normalize_side(items: list[Any]) -> tuple[list[dict[str, Any]], list[str]]:
+            out: list[dict[str, Any]] = []
+            warnings: list[str] = []
+            for i, row in enumerate(items):
+                if not isinstance(row, dict):
+                    warnings.append(f"ignored_non_object:{i}")
+                    continue
+                pid = str(row.get("player_id", "")).strip()
+                if not pid:
+                    warnings.append(f"missing_player_id:{i}")
+                    continue
+                try:
+                    x = float(row.get("x", 0.5))
+                    y = float(row.get("y", 0.5))
+                except (TypeError, ValueError):
+                    warnings.append(f"bad_coords:{i}")
+                    continue
+                out.append({"player_id": pid, "x": x, "y": y})
+            return out, warnings
+
+        home, w1 = _normalize_side(raw_home)
+        away, w2 = _normalize_side(raw_away)
+        warnings = w1 + w2
+        roster = players_by_id()
+        result = predict_lineup_match(home, away, roster)
+        result["warnings"] = warnings
+        return jsonify(result)
+
+    @app.get("/api/board/player-photo/<path:player_id>")
+    def board_player_photo(player_id: str):
+        if not BOARD_PLAYER_ID_RE.match(player_id):
+            abort(404)
+        roster = players_by_id()
+        row = roster.get(player_id)
+        if not row:
+            abort(404)
+        PLAYER_PHOTO_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        path = ensure_photo_file(player_id, row["name"], PLAYER_PHOTO_CACHE_DIR)
+        if path is None:
+            abort(404)
+        return send_file(path, mimetype="image/jpeg")
 
     return app

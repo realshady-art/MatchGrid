@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='board.css') }}">
+
+<main class="board-page">
+  <section class="board-intro">
+    <div class="board-intro__text nb-card nb-card--accent-cyan">
+      <p class="programme-eyebrow">Roster · {{ board_season or "—" }}</p>
+      <h2 class="board-intro__title">Tactics desk</h2>
+      <p class="board-intro__lede">
+        Build two squads on a <strong>PES-style pitch</strong>. Drag portraits from the roster, move players anywhere, drag off the grass or double-click to remove. Odds strip updates live.
+      </p>
+      {% if board_error %}
+      <p class="error-banner" role="alert">Roster missing: {{ board_error }}. Run <code class="inline-code">python3 main.py fetch-board-data</code> (needs network once).</p>
+      {% elif not board_ready %}
+      <p class="error-banner" role="alert">No roster. Run <code class="inline-code">python3 main.py fetch-board-data</code> then restart.</p>
+      {% endif %}
+    </div>
+    <div class="board-intro__predict nb-card nb-card--accent-pink" data-predict-panel>
+      <p class="programme-eyebrow">Result mix</p>
+      <div class="predict-bar-row" data-prob-hud>
+        <div class="predict-bar" data-outcome="H"><span>H</span><div class="predict-bar__track"><div class="predict-bar__fill" style="width:33.3%"></div></div><em data-pct="H">33%</em></div>
+        <div class="predict-bar" data-outcome="D"><span>D</span><div class="predict-bar__track"><div class="predict-bar__fill" style="width:33.3%"></div></div><em data-pct="D">33%</em></div>
+        <div class="predict-bar" data-outcome="A"><span>A</span><div class="predict-bar__track"><div class="predict-bar__fill" style="width:33.3%"></div></div><em data-pct="A">33%</em></div>
+      </div>
+      <p class="board-meta" data-strength-meta>Home — · Away —</p>
+      <p class="board-meta board-meta--muted" data-predict-note>Model = roster indices × coordinates (demo, not book odds).</p>
+    </div>
+  </section>
+
+  <div class="board-workspace">
+    <aside class="board-sidebar nb-card nb-card--accent-green">
+      <div class="board-sidebar__controls">
+        <label class="field field--compact">
+          <span class="field__label">Search</span>
+          <input type="search" data-pool-search placeholder="Name or club" autocomplete="off">
+        </label>
+        <label class="field field--compact">
+          <span class="field__label">League</span>
+          <select data-pool-league>
+            <option value="">All leagues</option>
+            {% for L in leagues %}
+            <option value="{{ L }}">{{ L }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <div class="assign-toggle" role="group" aria-label="Assign drags to side">
+          <span class="field__label">Place on</span>
+          <div class="assign-toggle__btns">
+            <button type="button" class="assign-btn is-active" data-side-pick="home">Home</button>
+            <button type="button" class="assign-btn" data-side-pick="away">Away</button>
+          </div>
+        </div>
+      </div>
+      <p class="board-hint">Cards: thick borders &amp; hard shadows. Pitch: eFootball-style turf &amp; chalk lines.</p>
+      <div class="pool-list" data-pool-list></div>
+    </aside>
+
+    <div class="board-stage nb-card nb-card--accent-yellow">
+      <div class="board-stage__head">
+        <span class="hud-chip">PES view · drag tokens</span>
+        <div class="board-stage__actions">
+          <button type="button" class="nb-btn" data-clear-home>Clear home</button>
+          <button type="button" class="nb-btn" data-clear-away>Clear away</button>
+        </div>
+      </div>
+      <div
+        class="pitch"
+        data-pitch
+        tabindex="0"
+        aria-label="Football pitch. Home defends left goal, attacks right."
+      >
+        <div class="pitch__grass" aria-hidden="true"></div>
+        <div class="pitch__border" aria-hidden="true"></div>
+        <div class="pitch__line pitch__line--mid" aria-hidden="true"></div>
+        <div class="pitch__circle" aria-hidden="true"></div>
+        <div class="pitch__spot--center" aria-hidden="true"></div>
+        <div class="pitch__penalty pitch__penalty--home" aria-hidden="true"></div>
+        <div class="pitch__penalty pitch__penalty--away" aria-hidden="true"></div>
+        <div class="pitch__six pitch__six--home" aria-hidden="true"></div>
+        <div class="pitch__six pitch__six--away" aria-hidden="true"></div>
+        <div class="pitch__spot--pk pitch__spot--pk-home" aria-hidden="true"></div>
+        <div class="pitch__spot--pk pitch__spot--pk-away" aria-hidden="true"></div>
+        <div class="pitch__label pitch__label--home">HOME</div>
+        <div class="pitch__label pitch__label--away">AWAY</div>
+        <div class="pitch__tokens" data-tokens-layer></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="{{ url_for('static', filename='board.js') }}"></script>
+{% endblock %}
