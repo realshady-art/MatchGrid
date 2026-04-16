@@ -15,7 +15,7 @@
 | **五大联赛池** | 通过公开 Understat 接口拉取联赛数据，生成 `players_pool.csv` / 同步 JSON，含搜索与按联赛筛选。 |
 | **球员指数** | 在本地为每名球员计算简化的 **atk / def / gk** 等维度，用于 `board_predict` 估算双方强度差。 |
 | **结果条** | 根据当前场上双方阵容与坐标，调用 `/api/board/predict` 更新 H/D/A 比例与说明文案。 |
-| **头像** | 维基肖像拉取并缓存在 `static/player_photos/`（图片文件默认不提交仓库，首次使用会逐步缓存）。 |
+| **头像** | 优先使用 **TheSportsDB** 官方球员 **cutout / thumb**（职业剪影式定妆图），按俱乐部名辅助消歧；极少数无数据时再回退维基缩略图。缓存为 `{球员id}_pro.png|jpg`（`static/player_photos/`，图片默认不提交仓库）。升级后若仍见旧图，可删掉该目录下旧的 `*.jpg`（无 `_pro` 后缀）后刷新。 |
 | **路由** | 仅保留战术板：`/` 为主页，`/board` 重定向到 `/`。 |
 
 ---
@@ -69,6 +69,8 @@ python3 main.py gui --port 5055
 ```
 
 浏览器打开对应地址即可。
+
+可选环境变量 **`THESPORTSDB_API_KEY`**：默认使用 TheSportsDB 公开开发用 key；若请求频繁可在 [thesportsdb.com](https://www.thesportsdb.com/api.php) 申请自有 key 后设置。
 
 ---
 

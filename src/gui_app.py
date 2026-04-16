@@ -1,13 +1,22 @@
 from __future__ import annotations
 
 import json
+import mimetypes
 import re
 from pathlib import Path
 from typing import Any
 
 from flask import Flask, abort, jsonify, redirect, render_template, request, send_file, url_for
 
-from src.board_data import filter_players, league_labels, load_players_bundle, players_by_id
+from src.board_data import (
+    club_labels,
+    clubs_by_league,
+    filter_players,
+    league_labels,
+    load_players_bundle,
+    players_by_id,
+    primary_club,
+)
 from src.board_predict import predict_lineup_match
 from src.config import BOARD_DATA_DIR, PLAYER_PHOTO_CACHE_DIR
 from src.player_photos import ensure_photo_file
@@ -34,6 +43,8 @@ def _board_template_context() -> dict[str, Any]:
         "board_season": board_season,
         "board_error": bundle.get("error"),
         "leagues": league_labels(),
+        "all_clubs": club_labels(),
+        "clubs_by_league": clubs_by_league(),
         "roster_count": len(players),
     }
 
@@ -57,9 +68,19 @@ def create_app() -> Flask:
     def api_board_players():
         q = request.args.get("q", "")
         league = request.args.get("league", "")
+        club = request.args.get("club", "")
+        pos_group = request.args.get("pos_group", "")
+        position = request.args.get("position", "")
         limit = min(500, max(1, int(request.args.get("limit", 120))))
         bundle = load_players_bundle()
-        rows = filter_players(search=q, league=league, limit=limit)
+        rows = filter_players(
+            search=q,
+            league=league,
+            club=club,
+            pos_group=pos_group,
+            position=position,
+            limit=limit,
+        )
         return jsonify(
             {
                 "season": bundle.get("season", ""),
@@ -115,9 +136,15 @@ def create_app() -> Flask:
         if not row:
             abort(404)
         PLAYER_PHOTO_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-        path = ensure_photo_file(player_id, row["name"], PLAYER_PHOTO_CACHE_DIR)
+        path = ensure_photo_file(
+            player_id,
+            row["name"],
+            PLAYER_PHOTO_CACHE_DIR,
+            club=primary_club(str(row.get("club") or "")),
+        )
         if path is None:
             abort(404)
-        return send_file(path, mimetype="image/jpeg")
+        mime, _ = mimetypes.guess_type(path.name)
+        return send_file(path, mimetype=mime or "image/jpeg")
 
     return app

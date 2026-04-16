@@ -1,10 +1,37 @@
 (function () {
+  function readJsonScript(id) {
+    const el = document.getElementById(id);
+    if (!el || !el.textContent.trim()) return null;
+    try {
+      return JSON.parse(el.textContent);
+    } catch {
+      return null;
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function escapeAttr(s) {
+    return escapeHtml(s).replace(/'/g, "&#39;");
+  }
+
   const pitch = document.querySelector("[data-pitch]");
   const tokensLayer = document.querySelector("[data-tokens-layer]");
   const poolList = document.querySelector("[data-pool-list]");
   const searchInput = document.querySelector("[data-pool-search]");
   const leagueSelect = document.querySelector("[data-pool-league]");
+  const clubSelect = document.querySelector("[data-pool-club]");
+  const posGroupSelect = document.querySelector("[data-pool-pos-group]");
   const strengthMeta = document.querySelector("[data-strength-meta]");
+  const CLUBS_BY_LEAGUE = readJsonScript("board-clubs-by-league") || {};
+  const ALL_CLUBS = readJsonScript("board-all-clubs");
+  const allClubsList = Array.isArray(ALL_CLUBS) ? ALL_CLUBS : [];
   let activeSide = "home";
 
   const state = { home: [], away: [] };
@@ -65,12 +92,42 @@
   let poolItems = [];
   let fetchTimer;
 
+  function rebuildClubSelect() {
+    if (!clubSelect) return;
+    const prev = clubSelect.value;
+    const lg = leagueSelect?.value || "";
+    const list =
+      lg && Array.isArray(CLUBS_BY_LEAGUE[lg]) && CLUBS_BY_LEAGUE[lg].length
+        ? CLUBS_BY_LEAGUE[lg]
+        : allClubsList;
+    clubSelect.innerHTML =
+      '<option value="">全部俱乐部</option>' +
+      list
+        .map(
+          (c) =>
+            `<option value="${escapeAttr(c)}" title="${escapeAttr(c)}">${escapeHtml(c)}</option>`
+        )
+        .join("");
+    if (prev && list.includes(prev)) clubSelect.value = prev;
+  }
+
+  function formatClubLine(club) {
+    return String(club || "")
+      .trim()
+      .replace(/\s*,\s*/g, " · ")
+      .replace(/\s*\/\s*/g, " · ") || "—";
+  }
+
   async function loadPool() {
     const q = searchInput?.value?.trim() || "";
     const league = leagueSelect?.value || "";
+    const club = clubSelect?.value || "";
+    const posGroup = posGroupSelect?.value || "";
     const params = new URLSearchParams({ limit: "200" });
     if (q) params.set("q", q);
     if (league) params.set("league", league);
+    if (club) params.set("club", club);
+    if (posGroup) params.set("pos_group", posGroup);
     const res = await fetch(`/api/board/players?${params}`);
     if (!res.ok) return;
     const data = await res.json();
@@ -90,7 +147,7 @@
         </div>
         <div class="pool-row__body">
           <div class="pool-row__name">${escapeHtml(p.name)}</div>
-          <div class="pool-row__meta">${escapeHtml(p.club)} · ${escapeHtml(p.league)} · ${escapeHtml(p.position)}</div>
+          <div class="pool-row__meta">${escapeHtml(formatClubLine(p.club))} · ${escapeHtml(p.league)} · ${escapeHtml(p.position)}</div>
         </div>
         <div class="pool-row__rating">${Number(p.rating).toFixed(0)}</div>
       </div>`;
@@ -112,18 +169,6 @@
         ev.dataTransfer.effectAllowed = "copy";
       });
     });
-  }
-
-  function escapeHtml(s) {
-    return String(s)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-  }
-
-  function escapeAttr(s) {
-    return escapeHtml(s).replace(/'/g, "&#39;");
   }
 
   function normCoord(clientX, clientY) {
@@ -317,8 +362,14 @@
     window.clearTimeout(fetchTimer);
     fetchTimer = window.setTimeout(loadPool, 220);
   });
-  leagueSelect?.addEventListener("change", loadPool);
+  leagueSelect?.addEventListener("change", () => {
+    rebuildClubSelect();
+    loadPool();
+  });
+  clubSelect?.addEventListener("change", loadPool);
+  posGroupSelect?.addEventListener("change", loadPool);
 
+  rebuildClubSelect();
   loadPool();
   runPredict();
 })();

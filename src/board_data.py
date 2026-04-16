@@ -1,12 +1,31 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 
+# Understat sometimes merges mid-season clubs as "Chelsea,Leeds". Treat as separate club names
+# for the dropdown and matching, without concatenating two teams into one menu row.
+_CLUB_DELIM = re.compile(r"[,/]|(?:\s+and\s+)", re.IGNORECASE)
+
 from src.config import BOARD_PLAYERS_FILE, BOARD_PLAYERS_POOL_CSV
+
+
+def club_tokens(club: str) -> list[str]:
+    """Single-club names from a roster cell (splits Chelsea,Leeds → Chelsea, Leeds)."""
+    s = str(club or "").strip()
+    if not s:
+        return []
+    return [p.strip() for p in _CLUB_DELIM.split(s) if p.strip()]
+
+
+def primary_club(club: str) -> str:
+    """First club string (e.g. for photo API hints)."""
+    t = club_tokens(club)
+    return t[0] if t else ""
 
 
 def _normalize_from_json(raw: dict[str, Any]) -> dict[str, Any]:
@@ -98,6 +117,9 @@ def filter_players(
     *,
     search: str = "",
     league: str = "",
+    club: str = "",
+    pos_group: str = "",
+    position: str = "",
     limit: int = 80,
     csv_path: Path | None = None,
     json_path: Path | None = None,
@@ -106,14 +128,20 @@ def filter_players(
     rows = list(bundle["players"])
     q = search.strip().lower()
     if q:
-        rows = [
-            p
-            for p in rows
-            if q in p["name"].lower() or q in p["club"].lower() or q in p["id"].lower()
-        ]
+        # Text box is name-only; league / club / position use the dropdowns.
+        rows = [p for p in rows if q in p["name"].lower()]
     lg = league.strip()
     if lg:
         rows = [p for p in rows if p["league"] == lg]
+    cb = club.strip()
+    if cb:
+        rows = [p for p in rows if cb in club_tokens(p["club"])]
+    pg = pos_group.strip()
+    if pg:
+        rows = [p for p in rows if p["pos_group"] == pg]
+    pos = position.strip()
+    if pos:
+        rows = [p for p in rows if p["position"] == pos]
     return rows[: max(1, min(limit, 500))]
 
 
@@ -127,3 +155,31 @@ def league_labels(csv_path: Path | None = None, json_path: Path | None = None) -
             seen.add(L)
             out.append(L)
     return sorted(out)
+
+
+def club_labels(csv_path: Path | None = None, json_path: Path | None = None) -> list[str]:
+    """Sorted unique single-club names (never 'Chelsea,Leeds' as one row)."""
+    bundle = load_players_bundle(csv_path=csv_path, json_path=json_path)
+    names: set[str] = set()
+    for p in bundle["players"]:
+        for t in club_tokens(str(p.get("club", ""))):
+            names.add(t)
+    return sorted(names)
+
+
+def clubs_by_league(
+    csv_path: Path | None = None,
+    json_path: Path | None = None,
+) -> dict[str, list[str]]:
+    """League → sorted clubs, for dependent club dropdown."""
+    bundle = load_players_bundle(csv_path=csv_path, json_path=json_path)
+    buckets: dict[str, set[str]] = {}
+    for p in bundle["players"]:
+        L = str(p.get("league", "")).strip()
+        if not L:
+            continue
+        for c in club_tokens(str(p.get("club", ""))):
+            buckets.setdefault(L, set()).add(c)
+    return {lg: sorted(clubs) for lg, clubs in sorted(buckets.items())}
+
+
