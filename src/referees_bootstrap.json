@@ -1,0 +1,186 @@
+{
+  "referees": [
+    {
+      "id": "ref-a-taylor",
+      "name": "A Taylor",
+      "matches": 25,
+      "bias_h": 0.03684,
+      "bias_d": -0.07469,
+      "bias_a": 0.00532
+    },
+    {
+      "id": "ref-c-kavanagh",
+      "name": "C Kavanagh",
+      "matches": 24,
+      "bias_h": 0.02446,
+      "bias_d": -0.01917,
+      "bias_a": -0.01833
+    },
+    {
+      "id": "ref-m-oliver",
+      "name": "M Oliver",
+      "matches": 24,
+      "bias_h": -0.05595,
+      "bias_d": -0.01917,
+      "bias_a": 0.0748
+    },
+    {
+      "id": "ref-p-bankes",
+      "name": "P Bankes",
+      "matches": 22,
+      "bias_h": 0.12958,
+      "bias_d": -0.15728,
+      "bias_a": -0.12815
+    },
+    {
+      "id": "ref-s-attwell",
+      "name": "S Attwell",
+      "matches": 20,
+      "bias_h": -0.07776,
+      "bias_d": 0.0661,
+      "bias_a": 0.02746
+    },
+    {
+      "id": "ref-d-england",
+      "name": "D England",
+      "matches": 19,
+      "bias_h": 0.0315,
+      "bias_d": -0.05828,
+      "bias_a": 0.00179
+    },
+    {
+      "id": "ref-j-gillett",
+      "name": "J Gillett",
+      "matches": 19,
+      "bias_h": -0.20448,
+      "bias_d": 0.03918,
+      "bias_a": 0.13314
+    },
+    {
+      "id": "ref-s-barrott",
+      "name": "S Barrott",
+      "matches": 19,
+      "bias_h": -0.02962,
+      "bias_d": 0.11378,
+      "bias_a": -0.09189
+    },
+    {
+      "id": "ref-t-bramall",
+      "name": "T Bramall",
+      "matches": 19,
+      "bias_h": 0.0024,
+      "bias_d": 0.11378,
+      "bias_a": -0.15153
+    },
+    {
+      "id": "ref-a-madley",
+      "name": "A Madley",
+      "matches": 17,
+      "bias_h": -0.03853,
+      "bias_d": -0.0316,
+      "bias_a": 0.0667
+    },
+    {
+      "id": "ref-c-pawson",
+      "name": "C Pawson",
+      "matches": 17,
+      "bias_h": -0.07857,
+      "bias_d": 0.02082,
+      "bias_a": 0.0667
+    },
+    {
+      "id": "ref-r-jones",
+      "name": "R Jones",
+      "matches": 16,
+      "bias_h": 0.07241,
+      "bias_d": -0.08011,
+      "bias_a": -0.05098
+    },
+    {
+      "id": "ref-s-hooper",
+      "name": "S Hooper",
+      "matches": 15,
+      "bias_h": -0.04946,
+      "bias_d": 0.04993,
+      "bias_a": 0.01416
+    },
+    {
+      "id": "ref-m-salisbury",
+      "name": "M Salisbury",
+      "matches": 11,
+      "bias_h": 0.01816,
+      "bias_d": 0.06513,
+      "bias_a": -0.10148
+    },
+    {
+      "id": "ref-t-harrington",
+      "name": "T Harrington",
+      "matches": 11,
+      "bias_h": -0.08107,
+      "bias_d": -0.0757,
+      "bias_a": 0.1252
+    },
+    {
+      "id": "ref-j-brooks",
+      "name": "J Brooks",
+      "matches": 10,
+      "bias_h": 0.11319,
+      "bias_d": -0.0563,
+      "bias_a": -0.17743
+    },
+    {
+      "id": "ref-t-robinson",
+      "name": "T Robinson",
+      "matches": 9,
+      "bias_h": 0.05821,
+      "bias_d": -0.03565,
+      "bias_a": -0.06143
+    },
+    {
+      "id": "ref-p-tierney",
+      "name": "P Tierney",
+      "matches": 8,
+      "bias_h": 0.0345,
+      "bias_d": -0.01357,
+      "bias_a": -0.03935
+    },
+    {
+      "id": "ref-t-kirk",
+      "name": "T Kirk",
+      "matches": 4,
+      "bias_h": -0.05585,
+      "bias_d": -0.00944,
+      "bias_a": 0.06832
+    },
+    {
+      "id": "ref-a-kitchen",
+      "name": "A Kitchen",
+      "matches": 3,
+      "bias_h": 0.05825,
+      "bias_d": 0.02428,
+      "bias_a": -0.12975
+    },
+    {
+      "id": "ref-f-hallam",
+      "name": "F Hallam",
+      "matches": 3,
+      "bias_h": -0.02213,
+      "bias_d": 0.02428,
+      "bias_a": 0.00669
+    },
+    {
+      "id": "ref-m-donohue",
+      "name": "M Donohue",
+      "matches": 3,
+      "bias_h": -0.02213,
+      "bias_d": -0.12975,
+      "bias_a": 0.10203
+    }
+  ],
+  "meta": {
+    "trained_at": "2026-04-16T09:16:46.866945+00:00",
+    "source": "https://www.football-data.co.uk/mmz4281/2526/E0.csv",
+    "rows": 319,
+    "method": "smoothed log-rate vs league baseline → logit offsets (demo calibration)"
+  }
+}

@@ -3,6 +3,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='board.css') }}">
 <script type="application/json" id="board-clubs-by-league">{{ clubs_by_league | tojson }}</script>
 <script type="application/json" id="board-all-clubs">{{ all_clubs | tojson }}</script>
+<script type="application/json" id="board-referees">{{ referees_public | tojson }}</script>
 
 <main class="board-page">
   <section class="board-intro">
@@ -82,8 +83,35 @@
           </div>
         </div>
       </div>
-      <p class="board-hint">Cards: thick borders &amp; hard shadows. Pitch: eFootball-style turf &amp; chalk lines.</p>
-      <div class="pool-list" data-pool-list></div>
+      <div class="board-referee-section">
+        <span class="field__label board-referee-section__title">裁判（可滚动 · 拖一名上场或留空）</span>
+        <div class="referee-list" data-referee-list>
+          {% for r in referees_public %}
+          <div class="referee-row" draggable="true" data-referee-id="{{ r.id }}" title="拖到球场；全场仅一名裁判">
+            <div class="referee-row__face-wrap">
+              <img
+                class="referee-row__face"
+                width="48"
+                height="48"
+                alt=""
+                loading="lazy"
+                decoding="async"
+                src="{{ url_for('board_referee_photo', referee_id=r.id) }}"
+              />
+            </div>
+            <div class="referee-row__body">
+              <div class="referee-row__name">{{ r.name }}</div>
+              <div class="referee-row__meta">{{ r.matches }} 场 · 拟合偏置</div>
+            </div>
+            <div class="referee-row__badge" aria-hidden="true">REF</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="board-sidebar__players">
+        <p class="board-roster-label">球员名单</p>
+        <div class="pool-list" data-pool-list></div>
+      </div>
     </aside>
 
     <div class="board-stage nb-card nb-card--accent-yellow">
@@ -92,6 +120,26 @@
         <div class="board-stage__actions">
           <button type="button" class="nb-btn" data-clear-home>Clear home</button>
           <button type="button" class="nb-btn" data-clear-away>Clear away</button>
+        </div>
+      </div>
+      <div class="board-preset" data-preset-panel>
+        <div class="board-preset__row">
+          <label class="field field--compact board-preset__field">
+            <span class="field__label">主队预设</span>
+            <select class="filter-select" data-preset-home aria-label="主队预设俱乐部">
+              {% for c in all_clubs %}
+              <option value="{{ c }}" {% if c == preset_default_home %}selected{% endif %}>{{ c }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label class="field field--compact board-preset__field">
+            <span class="field__label">客队预设</span>
+            <select class="filter-select" data-preset-away aria-label="客队预设俱乐部">
+              {% for c in all_clubs %}
+              <option value="{{ c }}" {% if c == preset_default_away %}selected{% endif %}>{{ c }}</option>
+              {% endfor %}
+            </select>
+          </label>
         </div>
       </div>
       <div

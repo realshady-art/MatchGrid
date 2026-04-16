@@ -15,6 +15,13 @@ def run_fetch_board_data() -> None:
     subprocess.check_call([sys.executable, str(script)], env=env, cwd=str(root))
 
 
+def run_train_referees() -> None:
+    root = Path(__file__).resolve().parent
+    script = root / "scripts" / "train_referees.py"
+    env = {**os.environ, "PYTHONPATH": str(root)}
+    subprocess.check_call([sys.executable, str(script)], env=env, cwd=str(root))
+
+
 def run_gui(host: str, port: int) -> None:
     app = create_app()
     app.run(host=host, port=port, debug=False)
@@ -27,6 +34,10 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser(
         "fetch-board-data",
         help="Download Big-5 player stats (Understat) into data/board/players_pool.csv",
+    )
+    subparsers.add_parser(
+        "train-referees",
+        help="Fit referee biases from football-data.co.uk EPL CSV → data/board/referees.json",
     )
     gui_parser = subparsers.add_parser("gui", help="Run the Match Board web app")
     gui_parser.add_argument("--host", default=APP_HOST, help="Bind host")
@@ -41,6 +52,8 @@ def main() -> None:
 
     if args.command == "fetch-board-data":
         run_fetch_board_data()
+    elif args.command == "train-referees":
+        run_train_referees()
     elif args.command == "gui":
         run_gui(host=args.host, port=args.port)
 

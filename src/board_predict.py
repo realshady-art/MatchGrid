@@ -110,6 +110,7 @@ def predict_lineup_match(
     away: list[PlacedPlayer],
     players_by_id: dict[str, dict[str, Any]],
     *,
+    referee: dict[str, Any] | None = None,
     home_logit_bias: float = 0.22,
     draw_sharpness: float = 0.032,
     draw_base: float = 0.42,
@@ -117,6 +118,7 @@ def predict_lineup_match(
 ) -> dict[str, Any]:
     """
     Lineup-aware heuristic: atk/def/gk indices × pitch coordinates × role weights.
+    Optional referee: empirical H/D/A biases only (on-pitch position does not matter).
     """
     t_h, br_h = _team_strength(home, players_by_id, home_side=True)
     t_a, br_a = _team_strength(away, players_by_id, home_side=False)
@@ -124,17 +126,32 @@ def predict_lineup_match(
     h_logit = strength_scale * t_h + home_logit_bias
     a_logit = strength_scale * t_a
     d_logit = draw_base - draw_sharpness * diff
+
+    ref_note: dict[str, Any] | None = None
+    if referee:
+        bh = float(referee.get("bias_h", 0) or 0)
+        bd = float(referee.get("bias_d", 0) or 0)
+        ba = float(referee.get("bias_a", 0) or 0)
+        h_logit += bh
+        d_logit += bd
+        a_logit += ba
+        ref_note = {
+            "bias_applied": {"h": bh, "d": bd, "a": ba},
+        }
+
     probs = _softmax([h_logit, d_logit, a_logit])
     labels = ["H", "D", "A"]
     prediction = labels[int(max(range(3), key=lambda i: probs[i]))]
 
+    meta = {
+        "framework": "board_lineup_understat_indices_v1",
+        "note": "Heuristic over scraped season indices; referee offsets from football-data E0 fit.",
+        "referee": ref_note,
+    }
     return {
         "prediction": prediction,
         "probabilities": {labels[i]: round(probs[i], 6) for i in range(3)},
         "team_strength": {"home": round(t_h, 4), "away": round(t_a, 4)},
         "breakdown": {"home": br_h, "away": br_a},
-        "meta": {
-            "framework": "board_lineup_understat_indices_v1",
-            "note": "Heuristic over scraped season indices; calibrate later.",
-        },
+        "meta": meta,
     }

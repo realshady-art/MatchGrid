@@ -10,3 +10,6 @@ instance/
 static/player_photos/*.jpg
 static/player_photos/*.jpeg
 static/player_photos/*.png
+static/referee_photos/*.jpg
+static/referee_photos/*.jpeg
+static/referee_photos/*.png

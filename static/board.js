@@ -28,13 +28,16 @@
   const leagueSelect = document.querySelector("[data-pool-league]");
   const clubSelect = document.querySelector("[data-pool-club]");
   const posGroupSelect = document.querySelector("[data-pool-pos-group]");
+  const presetHomeSelect = document.querySelector("[data-preset-home]");
+  const presetAwaySelect = document.querySelector("[data-preset-away]");
   const strengthMeta = document.querySelector("[data-strength-meta]");
   const CLUBS_BY_LEAGUE = readJsonScript("board-clubs-by-league") || {};
   const ALL_CLUBS = readJsonScript("board-all-clubs");
   const allClubsList = Array.isArray(ALL_CLUBS) ? ALL_CLUBS : [];
+  const REFEREE_LIST = readJsonScript("board-referees") || [];
   let activeSide = "home";
 
-  const state = { home: [], away: [] };
+  const state = { home: [], away: [], referee: null };
 
   let dragToken = null;
 
@@ -68,6 +71,27 @@
     const letter = (name || "?").trim().charAt(0).toUpperCase() || "?";
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><rect fill="#121820" width="128" height="128"/><text x="64" y="82" text-anchor="middle" fill="#2ee6d6" font-size="58" font-family="system-ui,Segoe UI,sans-serif" font-weight="700">${letter}</text></svg>`;
     return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  }
+
+  function bindRefereeFaceImg(img, refereeId, name) {
+    if (img.dataset.refereeBound) return;
+    img.dataset.refereeBound = "1";
+    const primary = `/api/board/referee-photo/${encodeURIComponent(refereeId)}`;
+    const remoteFallback = `https://ui-avatars.com/api/?background=1a1a1a&color=ffe566&size=256&bold=true&name=${encodeURIComponent(name || "?")}`;
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.alt = name || "";
+    img.src = primary;
+    img.addEventListener("error", () => {
+      const step = img.dataset.faceStep || "0";
+      if (step === "0") {
+        img.dataset.faceStep = "1";
+        img.src = remoteFallback;
+      } else if (step === "1") {
+        img.dataset.faceStep = "2";
+        img.src = letterAvatarDataUrl(name);
+      }
+    });
   }
 
   function bindFaceImg(img, playerId, name) {
@@ -116,6 +140,37 @@
       .trim()
       .replace(/\s*,\s*/g, " · ")
       .replace(/\s*\/\s*/g, " · ") || "—";
+  }
+
+  async function applyPreset() {
+    const homeClub = presetHomeSelect?.value?.trim() || "";
+    const awayClub = presetAwaySelect?.value?.trim() || "";
+    if (!homeClub || !awayClub) {
+      state.home = [];
+      state.away = [];
+      renderTokens();
+      schedulePredict();
+      return;
+    }
+    try {
+      const params = new URLSearchParams({ home: homeClub, away: awayClub });
+      const res = await fetch(`/api/board/preset?${params}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const toTokens = (rows) =>
+        (rows || []).map((row) => ({
+          instanceId: uid(),
+          player: row.player,
+          x: clamp(Number(row.x) || 0.5),
+          y: clamp(Number(row.y) || 0.5),
+        }));
+      state.home = toTokens(data.home);
+      state.away = toTokens(data.away);
+      renderTokens();
+      schedulePredict();
+    } catch {
+      /* ignore */
+    }
   }
 
   async function loadPool() {
@@ -202,6 +257,17 @@
       return;
     }
     const { x, y } = normCoord(ev.clientX, ev.clientY);
+    if (payload.kind === "referee" && payload.record) {
+      state.referee = {
+        instanceId: uid(),
+        record: payload.record,
+        x,
+        y,
+      };
+      renderTokens();
+      schedulePredict();
+      return;
+    }
     if (payload.kind === "pool") {
       const side = payload.side === "away" ? "away" : "home";
       state[side].push({
@@ -230,11 +296,18 @@
     const dy = (ev.clientY - dragToken.startCY) / rect.height;
     let x = clamp(dragToken.origX + dx);
     let y = clamp(dragToken.origY + dy);
-    const list = state[dragToken.side];
-    const tok = list.find((t) => t.instanceId === dragToken.instanceId);
-    if (tok) {
-      tok.x = x;
-      tok.y = y;
+    if (dragToken.kind === "referee") {
+      if (state.referee) {
+        state.referee.x = x;
+        state.referee.y = y;
+      }
+    } else {
+      const list = state[dragToken.side];
+      const tok = list.find((t) => t.instanceId === dragToken.instanceId);
+      if (tok) {
+        tok.x = x;
+        tok.y = y;
+      }
     }
     dragToken.el.style.left = `${x * 100}%`;
     dragToken.el.style.top = `${y * 100}%`;
@@ -251,11 +324,17 @@
     const cy = ev.clientY;
     const outside = cx < rect.left - 12 || cx > rect.right + 12 || cy < rect.top - 12 || cy > rect.bottom + 12;
     if (outside) {
-      state[dragToken.side] = state[dragToken.side].filter((t) => t.instanceId !== dragToken.instanceId);
+      if (dragToken.kind === "referee") {
+        state.referee = null;
+      } else {
+        state[dragToken.side] = state[dragToken.side].filter((t) => t.instanceId !== dragToken.instanceId);
+      }
       renderTokens();
+      schedulePredict();
+    } else if (dragToken.kind !== "referee") {
+      schedulePredict();
     }
     dragToken = null;
-    schedulePredict();
   }
 
   function attachTokenPointerHandlers(el, side, t) {
@@ -263,6 +342,7 @@
       if (ev.button !== 0) return;
       ev.preventDefault();
       dragToken = {
+        kind: "player",
         el,
         side,
         instanceId: t.instanceId,
@@ -280,6 +360,32 @@
     el.addEventListener("dblclick", (ev) => {
       ev.preventDefault();
       state[side] = state[side].filter((x) => x.instanceId !== t.instanceId);
+      renderTokens();
+      schedulePredict();
+    });
+  }
+
+  function attachRefereePointerHandlers(el) {
+    el.addEventListener("pointerdown", (ev) => {
+      if (ev.button !== 0) return;
+      if (!state.referee) return;
+      ev.preventDefault();
+      dragToken = {
+        kind: "referee",
+        el,
+        pointerId: ev.pointerId,
+        startCX: ev.clientX,
+        startCY: ev.clientY,
+        origX: state.referee.x,
+        origY: state.referee.y,
+      };
+      document.addEventListener("pointermove", onDocumentPointerMove);
+      document.addEventListener("pointerup", onDocumentPointerUp);
+      document.addEventListener("pointercancel", onDocumentPointerUp);
+    });
+    el.addEventListener("dblclick", (ev) => {
+      ev.preventDefault();
+      state.referee = null;
       renderTokens();
       schedulePredict();
     });
@@ -313,6 +419,25 @@
 
     addTokens("home");
     addTokens("away");
+    if (state.referee) {
+      const t = state.referee;
+      const el = document.createElement("div");
+      el.className = "pitch-token pitch-token--referee";
+      el.style.left = `${t.x * 100}%`;
+      el.style.top = `${t.y * 100}%`;
+      el.innerHTML = `
+        <div class="pitch-token__inner">
+          <img class="pitch-token__face pitch-token__face--referee" width="56" height="56" alt="${escapeAttr(t.record.name)}" />
+          <div class="pitch-token__text">
+            <span class="pitch-token__name">${escapeHtml(t.record.name)}</span>
+            <span class="pitch-token__rating">REF</span>
+          </div>
+        </div>`;
+      const rimg = el.querySelector(".pitch-token__face");
+      bindRefereeFaceImg(rimg, t.record.id, t.record.name);
+      attachRefereePointerHandlers(el);
+      frag.appendChild(el);
+    }
     tokensLayer.appendChild(frag);
   }
 
@@ -326,6 +451,7 @@
     const body = {
       home: state.home.map((t) => ({ player_id: t.player.id, x: t.x, y: t.y })),
       away: state.away.map((t) => ({ player_id: t.player.id, x: t.x, y: t.y })),
+      referee: state.referee ? { referee_id: state.referee.record.id } : null,
     };
     try {
       const res = await fetch("/api/board/predict", {
@@ -354,7 +480,16 @@
     document.querySelector('.predict-bar[data-outcome="A"] .predict-bar__fill').style.width = `${a}%`;
     const ts = data.team_strength || {};
     if (strengthMeta) {
-      strengthMeta.textContent = `Strength · Home ${ts.home ?? "—"} · Away ${ts.away ?? "—"} · Call ${data.prediction ?? "—"}`;
+      const ra = data.referee_applied;
+      const refBit = ra && ra.name ? ` · Ref ${ra.name}` : "";
+      strengthMeta.textContent = `Strength · Home ${ts.home ?? "—"} · Away ${ts.away ?? "—"} · Call ${data.prediction ?? "—"}${refBit}`;
+    }
+    const noteEl = document.querySelector("[data-predict-note]");
+    if (noteEl) {
+      const rm = data.meta && data.meta.referee;
+      noteEl.textContent = rm
+        ? "模型含裁判项：仅按裁判身份施加 H/D/A 偏置（其在场上的位置不影响概率）。"
+        : "模型 = 阵容指数 × 坐标；当前未在球场放置裁判，预测不含裁判项。";
     }
   }
 
@@ -368,8 +503,34 @@
   });
   clubSelect?.addEventListener("change", loadPool);
   posGroupSelect?.addEventListener("change", loadPool);
+  presetHomeSelect?.addEventListener("change", applyPreset);
+  presetAwaySelect?.addEventListener("change", applyPreset);
 
+  function bindRefereeListDrag() {
+    document.querySelectorAll("[data-referee-list] [data-referee-id]").forEach((row) => {
+      row.addEventListener("dragstart", (ev) => {
+        const id = row.getAttribute("data-referee-id");
+        const rec = REFEREE_LIST.find((r) => r.id === id);
+        if (!rec) return;
+        ev.dataTransfer.setData("application/x-match-board", JSON.stringify({ kind: "referee", record: rec }));
+        ev.dataTransfer.effectAllowed = "copy";
+      });
+    });
+  }
+
+  function bindRefereeListFaces() {
+    document.querySelectorAll("[data-referee-list] .referee-row__face").forEach((img) => {
+      const row = img.closest("[data-referee-id]");
+      const id = row?.getAttribute("data-referee-id");
+      const rec = REFEREE_LIST.find((r) => r.id === id);
+      if (!rec) return;
+      bindRefereeFaceImg(img, rec.id, rec.name);
+    });
+  }
+
+  bindRefereeListDrag();
+  bindRefereeListFaces();
   rebuildClubSelect();
   loadPool();
-  runPredict();
+  applyPreset();
 })();

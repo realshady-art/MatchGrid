@@ -18,10 +18,14 @@ from src.board_data import (
     primary_club,
 )
 from src.board_predict import predict_lineup_match
-from src.config import BOARD_DATA_DIR, PLAYER_PHOTO_CACHE_DIR
+from src.board_preset import DEFAULT_PRESET_AWAY_CLUB, DEFAULT_PRESET_HOME_CLUB, build_full_preset
+from src.config import BOARD_DATA_DIR, PLAYER_PHOTO_CACHE_DIR, REFEREE_PHOTO_CACHE_DIR
 from src.player_photos import ensure_photo_file
+from src.referee_data import referee_by_id, referee_public_dict, list_referees
+from src.referee_photos import ensure_referee_photo_file
 
 BOARD_PLAYER_ID_RE = re.compile(r"^u5-[A-Za-z0-9_]+-\d+$")
+BOARD_REFEREE_ID_RE = re.compile(r"^ref-[a-z0-9-]+$")
 
 
 def _board_template_context() -> dict[str, Any]:
@@ -45,6 +49,9 @@ def _board_template_context() -> dict[str, Any]:
         "leagues": league_labels(),
         "all_clubs": club_labels(),
         "clubs_by_league": clubs_by_league(),
+        "preset_default_home": DEFAULT_PRESET_HOME_CLUB,
+        "preset_default_away": DEFAULT_PRESET_AWAY_CLUB,
+        "referees_public": [referee_public_dict(r) for r in list_referees()],
         "roster_count": len(players),
     }
 
@@ -89,6 +96,19 @@ def create_app() -> Flask:
             }
         )
 
+    @app.get("/api/board/preset")
+    def api_board_preset():
+        home_c = request.args.get("home", DEFAULT_PRESET_HOME_CLUB).strip()
+        away_c = request.args.get("away", DEFAULT_PRESET_AWAY_CLUB).strip()
+        if not home_c or not away_c:
+            return jsonify({"error": "home_and_away_club_required"}), 400
+        payload = build_full_preset(home_c, away_c)
+        payload["defaults"] = {
+            "home": DEFAULT_PRESET_HOME_CLUB,
+            "away": DEFAULT_PRESET_AWAY_CLUB,
+        }
+        return jsonify(payload)
+
     @app.post("/api/board/predict")
     def api_board_predict():
         payload = request.get_json(force=True, silent=True)
@@ -123,8 +143,31 @@ def create_app() -> Flask:
         away, w2 = _normalize_side(raw_away)
         warnings = w1 + w2
         roster = players_by_id()
-        result = predict_lineup_match(home, away, roster)
+
+        ref_for_model: dict[str, Any] | None = None
+        ref_raw = payload.get("referee")
+        if isinstance(ref_raw, dict):
+            rid = str(ref_raw.get("referee_id", "")).strip()
+            if rid and BOARD_REFEREE_ID_RE.match(rid):
+                rrow = referee_by_id(rid)
+                if rrow:
+                    ref_for_model = {
+                        "bias_h": float(rrow.get("bias_h", 0) or 0),
+                        "bias_d": float(rrow.get("bias_d", 0) or 0),
+                        "bias_a": float(rrow.get("bias_a", 0) or 0),
+                    }
+
+        result = predict_lineup_match(home, away, roster, referee=ref_for_model)
         result["warnings"] = warnings
+        if ref_for_model and isinstance(ref_raw, dict):
+            rid = str(ref_raw.get("referee_id", "")).strip()
+            rrow = referee_by_id(rid)
+            if rrow:
+                result["referee_applied"] = {
+                    "id": rid,
+                    "name": rrow.get("name"),
+                    "matches": rrow.get("matches"),
+                }
         return jsonify(result)
 
     @app.get("/api/board/player-photo/<path:player_id>")
@@ -141,6 +184,24 @@ def create_app() -> Flask:
             row["name"],
             PLAYER_PHOTO_CACHE_DIR,
             club=primary_club(str(row.get("club") or "")),
+        )
+        if path is None:
+            abort(404)
+        mime, _ = mimetypes.guess_type(path.name)
+        return send_file(path, mimetype=mime or "image/jpeg")
+
+    @app.get("/api/board/referee-photo/<path:referee_id>")
+    def board_referee_photo(referee_id: str):
+        if not BOARD_REFEREE_ID_RE.match(referee_id):
+            abort(404)
+        row = referee_by_id(referee_id)
+        if not row:
+            abort(404)
+        REFEREE_PHOTO_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        path = ensure_referee_photo_file(
+            referee_id,
+            str(row.get("name", "")),
+            REFEREE_PHOTO_CACHE_DIR,
         )
         if path is None:
             abort(404)
