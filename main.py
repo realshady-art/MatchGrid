@@ -28,7 +28,7 @@ def run_gui(host: str, port: int) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Match Board — lineup prediction UI")
+    parser = argparse.ArgumentParser(description="MatchGrid — tactical lineup prediction UI")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     subparsers.add_parser(
@@ -39,7 +39,7 @@ def build_parser() -> argparse.ArgumentParser:
         "train-referees",
         help="Fit referee biases from football-data.co.uk EPL CSV → data/board/referees.json",
     )
-    gui_parser = subparsers.add_parser("gui", help="Run the Match Board web app")
+    gui_parser = subparsers.add_parser("gui", help="Run the MatchGrid web app")
     gui_parser.add_argument("--host", default=APP_HOST, help="Bind host")
     gui_parser.add_argument("--port", default=APP_PORT, type=int, help="Bind port")
 

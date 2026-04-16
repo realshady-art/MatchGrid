@@ -1,6 +1,13 @@
-# Match Board（战术板）
+# MatchGrid
 
-在浏览器里用 **自由坐标** 摆主客队阵容，基于本地球员赛季指标做 **主胜 / 平局 / 客胜** 的启发式估算。界面为 **Slock 式新粗野主义** 外壳 + **实况（PES）风格** 球场与棋子展示。
+**MatchGrid** 是在浏览器里摆放主客队阵容、用本地数据做 **主胜 / 平局 / 客胜** 启发式估算的战术实验台：**grid** 既指侧栏可检索的球员网格，也指球场上自由坐标下的「阵型栅格」——把球员当作棋子拖上场、任意移动，再即时刷新结果条。
+
+GitHub 仓库仍使用历史名称 **`epl-match-outcome-prediction`**（克隆后的目录名通常与此一致），产品对外名称统一为 **MatchGrid**。
+
+仓库地址：  
+https://github.com/realshady-art/epl-match-outcome-prediction
+
+界面为 **Slock 式新粗野主义** 外壳 + **实况（PES）风格** 球场与棋子展示。
 
 > **声明**：预测逻辑为演示用启发式，**不是**博彩盘口或商业模型，请勿用于实际投注决策。
 
@@ -15,6 +22,7 @@
 | **五大联赛池** | 通过公开 Understat 接口拉取联赛数据，生成 `players_pool.csv` / 同步 JSON，含搜索与按联赛筛选。 |
 | **球员指数** | 在本地为每名球员计算简化的 **atk / def / gk** 等维度，用于 `board_predict` 估算双方强度差。 |
 | **结果条** | 根据当前场上双方阵容与坐标，调用 `/api/board/predict` 更新 H/D/A 比例与说明文案。 |
+| **裁判（可选）** | 从侧栏拖一名裁判上场或留空；预测可带入裁判维度（具体逻辑见 `board_predict`）。 |
 | **头像** | 优先使用 **TheSportsDB** 官方球员 **cutout / thumb**（职业剪影式定妆图），按俱乐部名辅助消歧；极少数无数据时再回退维基缩略图。缓存为 `{球员id}_pro.png|jpg`（`static/player_photos/`，图片默认不提交仓库）。升级后若仍见旧图，可删掉该目录下旧的 `*.jpg`（无 `_pro` 后缀）后刷新。 |
 | **路由** | 仅保留战术板：`/` 为主页，`/board` 重定向到 `/`。 |
 
@@ -33,6 +41,8 @@
 推荐使用虚拟环境：
 
 ```bash
+git clone https://github.com/realshady-art/epl-match-outcome-prediction.git
+cd epl-match-outcome-prediction
 python3 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
@@ -78,7 +88,7 @@ python3 main.py gui --port 5055
 
 | 方法 | 路径 | 作用 |
 |------|------|------|
-| `GET` | `/` | 战术板页面 |
+| `GET` | `/` | MatchGrid 战术板页面 |
 | `GET` | `/api/board/players` | 查询参数：`q`、`league`、`limit` — 返回可拖拽球员列表 |
 | `POST` | `/api/board/predict` | JSON body：`home` / `away` 为 `{ player_id, x, y }[]`，返回概率与元信息 |
 | `GET` | `/api/board/player-photo/<player_id>` | 返回缓存的球员头像图片 |
@@ -88,15 +98,18 @@ python3 main.py gui --port 5055
 ## 仓库结构（主要文件）
 
 ```
-main.py                 # 子命令：gui、fetch-board-data
+main.py                 # 子命令：gui、fetch-board-data、train-referees
 scripts/build_players_pool.py
+scripts/train_referees.py
 src/
   gui_app.py            # Flask 应用与路由
   board_data.py         # 读 roster、过滤、联赛标签
   board_indices.py      # atk/def/gk 等指数
   board_predict.py      # 阵容 vs 阵容启发式
+  board_preset.py       # 预设阵容等
+  referee_data.py       # 裁判数据与偏差
   understat_fetch.py    # Understat 抓取辅助
-  player_photos.py      # 维基头像缓存
+  player_photos.py      # 头像缓存
   config.py
 static/
   styles.css            # Slock 全局变量与基础组件

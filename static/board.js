@@ -220,7 +220,7 @@
         const id = row.getAttribute("data-player-id");
         const player = poolItems.find((x) => x.id === id);
         if (!player) return;
-        ev.dataTransfer.setData("application/x-match-board", JSON.stringify({ kind: "pool", player, side: activeSide }));
+        ev.dataTransfer.setData("application/x-match-grid", JSON.stringify({ kind: "pool", player, side: activeSide }));
         ev.dataTransfer.effectAllowed = "copy";
       });
     });
@@ -248,7 +248,7 @@
 
   pitch?.addEventListener("drop", (ev) => {
     ev.preventDefault();
-    const raw = ev.dataTransfer.getData("application/x-match-board");
+    const raw = ev.dataTransfer.getData("application/x-match-grid");
     if (!raw) return;
     let payload;
     try {
@@ -512,7 +512,7 @@
         const id = row.getAttribute("data-referee-id");
         const rec = REFEREE_LIST.find((r) => r.id === id);
         if (!rec) return;
-        ev.dataTransfer.setData("application/x-match-board", JSON.stringify({ kind: "referee", record: rec }));
+        ev.dataTransfer.setData("application/x-match-grid", JSON.stringify({ kind: "referee", record: rec }));
         ev.dataTransfer.effectAllowed = "copy";
       });
     });
