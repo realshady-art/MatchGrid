@@ -66,6 +66,15 @@ python3 main.py fetch-board-data
 
 ## 启动应用
 
+推荐从仓库根目录直接运行启动脚本（会自动优先使用 `.venv` / `venv` 里的 Python）：
+
+```bash
+chmod +x matchgrid   # 仅需首次克隆后执行一次
+./matchgrid
+```
+
+等价命令：
+
 ```bash
 python3 main.py gui
 ```
@@ -75,6 +84,8 @@ python3 main.py gui
 若本机 **5000** 被占用（例如 macOS 相关服务），可换端口：
 
 ```bash
+./matchgrid --port 5055
+# 或
 python3 main.py gui --port 5055
 ```
 

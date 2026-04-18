@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# MatchGrid launcher: starts the local web UI (same as: python3 main.py gui)
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+export PYTHONPATH="${ROOT}${PYTHONPATH:+:$PYTHONPATH}"
+
+pick_python() {
+  if [[ -x "$ROOT/.venv/bin/python" ]]; then
+    echo "$ROOT/.venv/bin/python"
+  elif [[ -x "$ROOT/.venv/bin/python3" ]]; then
+    echo "$ROOT/.venv/bin/python3"
+  elif [[ -x "$ROOT/venv/bin/python" ]]; then
+    echo "$ROOT/venv/bin/python"
+  elif [[ -x "$ROOT/venv/bin/python3" ]]; then
+    echo "$ROOT/venv/bin/python3"
+  else
+    command -v python3
+  fi
+}
+
+exec "$(pick_python)" "$ROOT/main.py" gui "$@"
