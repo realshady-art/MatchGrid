@@ -125,7 +125,7 @@
         ? CLUBS_BY_LEAGUE[lg]
         : allClubsList;
     clubSelect.innerHTML =
-      '<option value="">全部俱乐部</option>' +
+      '<option value="">All clubs</option>' +
       list
         .map(
           (c) =>
@@ -488,8 +488,8 @@
     if (noteEl) {
       const rm = data.meta && data.meta.referee;
       noteEl.textContent = rm
-        ? "模型含裁判项：仅按裁判身份施加 H/D/A 偏置（其在场上的位置不影响概率）。"
-        : "模型 = 阵容指数 × 坐标；当前未在球场放置裁判，预测不含裁判项。";
+        ? "Referee term applied: H/D/A bias from referee identity only (position on the pitch does not affect probability)."
+        : "Model = roster indices × coordinates; no referee on the pitch — prediction omits referee term.";
     }
   }
 

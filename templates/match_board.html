@@ -35,43 +35,43 @@
     <aside class="board-sidebar nb-card nb-card--accent-green">
       <div class="board-sidebar__controls">
         <label class="field field--compact field--full">
-          <span class="field__label">球员姓名</span>
+          <span class="field__label">Player name</span>
           <input
             type="text"
             class="filter-text"
             data-pool-search
-            placeholder="仅按姓名搜索…"
+            placeholder="Search by name…"
             autocomplete="off"
             spellcheck="false"
           >
         </label>
-        <div class="filter-manual" role="group" aria-label="筛选">
+        <div class="filter-manual" role="group" aria-label="Filters">
           <label class="field field--compact field--filter">
-            <span class="field__label">联赛</span>
+            <span class="field__label">League</span>
             <select class="filter-select" data-pool-league>
-              <option value="">全部联赛</option>
+              <option value="">All leagues</option>
               {% for L in leagues %}
               <option value="{{ L }}">{{ L }}</option>
               {% endfor %}
             </select>
           </label>
           <label class="field field--compact field--filter">
-            <span class="field__label">俱乐部</span>
-            <select class="filter-select" data-pool-club title="每行仅一个俱乐部；选切尔西或利兹会分别列出各自球员">
-              <option value="">全部俱乐部</option>
+            <span class="field__label">Club</span>
+            <select class="filter-select" data-pool-club title="One club per row; choosing e.g. Chelsea or Leeds lists that club’s players">
+              <option value="">All clubs</option>
               {% for c in all_clubs %}
               <option value="{{ c }}" title="{{ c }}">{{ c }}</option>
               {% endfor %}
             </select>
           </label>
           <label class="field field--compact field--filter">
-            <span class="field__label">类型</span>
-            <select class="filter-select" data-pool-pos-group title="粗略位置：前锋 / 中场 / 后卫 / 守门员">
-              <option value="">全部类型</option>
-              <option value="FW">前锋</option>
-              <option value="MF">中场</option>
-              <option value="DF">后卫</option>
-              <option value="GK">守门员</option>
+            <span class="field__label">Type</span>
+            <select class="filter-select" data-pool-pos-group title="Rough position: forward / midfield / defender / goalkeeper">
+              <option value="">All types</option>
+              <option value="FW">Forward</option>
+              <option value="MF">Midfield</option>
+              <option value="DF">Defender</option>
+              <option value="GK">Goalkeeper</option>
             </select>
           </label>
         </div>
@@ -84,10 +84,10 @@
         </div>
       </div>
       <div class="board-referee-section">
-        <span class="field__label board-referee-section__title">裁判（可滚动 · 拖一名上场或留空）</span>
+        <span class="field__label board-referee-section__title">Referees (scroll · drag one onto the pitch or leave empty)</span>
         <div class="referee-list" data-referee-list>
           {% for r in referees_public %}
-          <div class="referee-row" draggable="true" data-referee-id="{{ r.id }}" title="拖到球场；全场仅一名裁判">
+          <div class="referee-row" draggable="true" data-referee-id="{{ r.id }}" title="Drag onto pitch; one referee per match">
             <div class="referee-row__face-wrap">
               <img
                 class="referee-row__face"
@@ -101,7 +101,7 @@
             </div>
             <div class="referee-row__body">
               <div class="referee-row__name">{{ r.name }}</div>
-              <div class="referee-row__meta">{{ r.matches }} 场 · 拟合偏置</div>
+              <div class="referee-row__meta">{{ r.matches }} matches · fitted bias</div>
             </div>
             <div class="referee-row__badge" aria-hidden="true">REF</div>
           </div>
@@ -109,7 +109,7 @@
         </div>
       </div>
       <div class="board-sidebar__players">
-        <p class="board-roster-label">球员名单</p>
+        <p class="board-roster-label">Roster</p>
         <div class="pool-list" data-pool-list></div>
       </div>
     </aside>
@@ -125,16 +125,16 @@
       <div class="board-preset" data-preset-panel>
         <div class="board-preset__row">
           <label class="field field--compact board-preset__field">
-            <span class="field__label">主队预设</span>
-            <select class="filter-select" data-preset-home aria-label="主队预设俱乐部">
+            <span class="field__label">Home preset</span>
+            <select class="filter-select" data-preset-home aria-label="Home preset club">
               {% for c in all_clubs %}
               <option value="{{ c }}" {% if c == preset_default_home %}selected{% endif %}>{{ c }}</option>
               {% endfor %}
             </select>
           </label>
           <label class="field field--compact board-preset__field">
-            <span class="field__label">客队预设</span>
-            <select class="filter-select" data-preset-away aria-label="客队预设俱乐部">
+            <span class="field__label">Away preset</span>
+            <select class="filter-select" data-preset-away aria-label="Away preset club">
               {% for c in all_clubs %}
               <option value="{{ c }}" {% if c == preset_default_away %}selected{% endif %}>{{ c }}</option>
               {% endfor %}
