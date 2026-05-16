@@ -1,138 +1,62 @@
 # MatchGrid
 
-**MatchGrid** 是在浏览器里摆放主客队阵容、用本地数据做 **主胜 / 平局 / 客胜** 启发式估算的战术实验台：**grid** 既指侧栏可检索的球员网格，也指球场上自由坐标下的「阵型栅格」——把球员当作棋子拖上场、任意移动，再即时刷新结果条。
+MatchGrid is an interactive football tactics board that lets users build lineups, move players across the pitch, and instantly estimate home/draw/away match outcomes from the current tactical setup.
 
-GitHub 仓库仍使用历史名称 **`epl-match-outcome-prediction`**（克隆后的目录名通常与此一致），产品对外名称统一为 **MatchGrid**。
+Live demo: https://matchgrid-realshady.vercel.app/
 
-仓库地址：  
-https://github.com/realshady-art/epl-match-outcome-prediction
+## Product Idea
 
-界面为 **Slock 式新粗野主义** 外壳 + **实况（PES）风格** 球场与棋子展示。
+Football predictions are easier to understand when the model is connected to visible tactical choices. MatchGrid turns prediction into an interactive board: users can drag players into position, compare two lineups, and see how the expected outcome changes as the setup changes.
 
-> **声明**：预测逻辑为演示用启发式，**不是**博彩盘口或商业模型，请勿用于实际投注决策。
+The product is designed for exploration, tactical storytelling, and lightweight decision support.
 
----
+## Core Experience
 
-## 功能说明
+- Drag-and-drop tactical board for home and away teams.
+- Searchable player pool with league and player filtering.
+- Free-form player positioning on a visual pitch.
+- Instant home/draw/away probability output.
+- Player cards and visual lineup state for quick comparison.
+- Optional referee input for richer match context.
 
-| 能力 | 说明 |
-|------|------|
-| **双队战术板** | 从侧栏 roster 拖球员上场；棋子可在场内任意移动；拖出草皮或双击棋子可移除。 |
-| **离线优先** | 核心页面与预测在本地完成；球员名单来自已生成的数据文件，无需实时调用付费 API。 |
-| **五大联赛池** | 通过公开 Understat 接口拉取联赛数据，生成 `players_pool.csv` / 同步 JSON，含搜索与按联赛筛选。 |
-| **球员指数** | 在本地为每名球员计算简化的 **atk / def / gk** 等维度，用于 `board_predict` 估算双方强度差。 |
-| **结果条** | 根据当前场上双方阵容与坐标，调用 `/api/board/predict` 更新 H/D/A 比例与说明文案。 |
-| **裁判（可选）** | 从侧栏拖一名裁判上场或留空；预测可带入裁判维度（具体逻辑见 `board_predict`）。 |
-| **头像** | 优先使用 **TheSportsDB** 官方球员 **cutout / thumb**（职业剪影式定妆图），按俱乐部名辅助消歧；极少数无数据时再回退维基缩略图。缓存为 `{球员id}_pro.png|jpg`（`static/player_photos/`，图片默认不提交仓库）。升级后若仍见旧图，可删掉该目录下旧的 `*.jpg`（无 `_pro` 后缀）后刷新。 |
-| **路由** | 仅保留战术板：`/` 为主页，`/board` 重定向到 `/`。 |
+## How It Works
 
----
+1. Player data is converted into simplified attacking, defensive, and goalkeeper indices.
+2. Users select players and place them on the pitch.
+3. The board captures both lineup strength and positional context.
+4. A prediction layer compares the two sides and produces home/draw/away probabilities.
+5. The interface updates immediately as the tactical setup changes.
 
-## 技术栈
+## Product Effect
 
-- **后端**：Python 3、Flask  
-- **数据**：pandas、requests（抓取 Understat）  
-- **前端**：原生 HTML/CSS/JS（`board.js` 指针拖拽、侧栏列表）
+MatchGrid makes match prediction more explainable. Instead of showing a static number, it lets users experiment with the lineup and see how tactical changes affect the result profile.
 
----
+## Tech Stack
 
-## 环境与安装
+- Python
+- Flask
+- pandas
+- JavaScript
+- HTML and CSS
+- Football data processing
 
-推荐使用虚拟环境：
+## Local Preview
 
 ```bash
-git clone https://github.com/realshady-art/epl-match-outcome-prediction.git
-cd epl-match-outcome-prediction
+git clone https://github.com/JeffreyDeng-spec/MatchGrid.git
+cd MatchGrid
 python3 -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
+source .venv/bin/activate
 pip install -r requirements.txt
-```
-
-若未装依赖就运行 `main.py gui`，会出现 `No module named 'flask'` 等错误，请先执行 `pip install`。
-
----
-
-## 数据准备（需联网，建议执行一次）
-
-生成 `data/board/players_pool.csv` 并同步打包用的球员 JSON（具体路径由 `src/board_data.py` / 脚本约定）：
-
-```bash
-python3 main.py fetch-board-data
-```
-
-`data/` 目录默认被 `.gitignore` 忽略，克隆仓库后需要本地自行拉取或拷贝数据。
-
----
-
-## 启动应用
-
-推荐从仓库根目录直接运行启动脚本（会自动优先使用 `.venv` / `venv` 里的 Python）：
-
-```bash
-chmod +x matchgrid   # 仅需首次克隆后执行一次
-./matchgrid
-```
-
-等价命令：
-
-```bash
 python3 main.py gui
 ```
 
-默认监听 **http://127.0.0.1:5000/** 。
+Then open:
 
-若本机 **5000** 被占用（例如 macOS 相关服务），可换端口：
-
-```bash
-./matchgrid --port 5055
-# 或
-python3 main.py gui --port 5055
+```text
+http://127.0.0.1:5000
 ```
 
-浏览器打开对应地址即可。
+## Project Focus
 
-可选环境变量 **`THESPORTSDB_API_KEY`**：默认使用 TheSportsDB 公开开发用 key；若请求频繁可在 [thesportsdb.com](https://www.thesportsdb.com/api.php) 申请自有 key 后设置。
-
----
-
-## HTTP API（摘要）
-
-| 方法 | 路径 | 作用 |
-|------|------|------|
-| `GET` | `/` | MatchGrid 战术板页面 |
-| `GET` | `/api/board/players` | 查询参数：`q`、`league`、`limit` — 返回可拖拽球员列表 |
-| `POST` | `/api/board/predict` | JSON body：`home` / `away` 为 `{ player_id, x, y }[]`，返回概率与元信息 |
-| `GET` | `/api/board/player-photo/<player_id>` | 返回缓存的球员头像图片 |
-
----
-
-## 仓库结构（主要文件）
-
-```
-main.py                 # 子命令：gui、fetch-board-data、train-referees
-scripts/build_players_pool.py
-scripts/train_referees.py
-src/
-  gui_app.py            # Flask 应用与路由
-  board_data.py         # 读 roster、过滤、联赛标签
-  board_indices.py      # atk/def/gk 等指数
-  board_predict.py      # 阵容 vs 阵容启发式
-  board_preset.py       # 预设阵容等
-  referee_data.py       # 裁判数据与偏差
-  understat_fetch.py    # Understat 抓取辅助
-  player_photos.py      # 头像缓存
-  config.py
-static/
-  styles.css            # Slock 全局变量与基础组件
-  board.css / board.js  # 球场与交互
-  shell.js              # 顶栏时钟等
-templates/
-  base.html
-  match_board.html
-```
-
----
-
-## 许可与致谢
-
-球员统计数据来源请遵循 **Understat** 的使用条款与版权声明；维基媒体头像遵循各自图片许可。
+MatchGrid is built around one product principle: make model output visible, interactive, and connected to the choices a football user actually understands.
